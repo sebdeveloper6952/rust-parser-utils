@@ -1,0 +1,8 @@
+terminals a + * ( ) 
+
+S a Sp
+Sp + S Sp
+S ( S ) Sp
+Sp S Sp
+Sp * Sp
+Sp ~

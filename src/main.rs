@@ -41,6 +41,16 @@ fn main() {
             }
         }
     }
+    println!("Terminals: {:?}", terminals);
+    println!("Grammar Start Symbol: {}", start_symbol);
+    println!("Productions");
+    for (head, prods) in &productions {
+        print!("{}", head);
+        for prod in prods {
+            println!("\t{:?}", prod);
+        }
+        println!();
+    }
 
     // init first
     for (head, _) in &productions {
@@ -52,7 +62,7 @@ fn main() {
         for (head, prods) in &productions {
             for body in prods {
                 let first_symbol = &body[0];
-                // is terminal
+                // A is terminal
                 if terminals.contains(first_symbol) {
                     if !first_sets[head].contains(first_symbol) {
                         changed = true;
@@ -61,7 +71,17 @@ fn main() {
                             .unwrap()
                             .insert(first_symbol.to_string());
                     }
-                } else {
+                }
+                // if A -> EMPTY
+                else if first_symbol == "~" {
+                    first_sets
+                        .get_mut(head)
+                        .unwrap()
+                        .insert(first_symbol.to_string());
+                    changed = true;
+                }
+                // if A is a nonterminal
+                else {
                     let new_symbols = first_sets[first_symbol].clone();
                     for symbol in new_symbols {
                         if !first_sets[head].contains(&symbol) {
@@ -75,6 +95,10 @@ fn main() {
         if !changed {
             break;
         }
+    }
+    println!("First Sets");
+    for (key, value) in &first_sets {
+        println!("{} => {:?}", key, value);
     }
 
     // init follow
@@ -104,8 +128,27 @@ fn main() {
                         changed = true;
                     }
                     // alone nonterminal
-                    if !terminals.contains(&prod[i]) && (i == prod.len() - 1) {
+                    else if &prod[i] != "~"
+                        && !terminals.contains(&prod[i])
+                        && (i == prod.len() - 1)
+                    {
                         let symbols = follow_sets[head].clone();
+                        for symbol in symbols {
+                            if !follow_sets[&prod[i]].contains(&symbol) {
+                                follow_sets
+                                    .get_mut(&prod[i])
+                                    .unwrap()
+                                    .insert(symbol.clone());
+                                changed = true;
+                            }
+                        }
+                    }
+                    // nonterminal followed by nonterminal
+                    else if (i < prod.len() - 1)
+                        && (&prod[i] != "~" && &prod[i + 1] != "~")
+                        && (!terminals.contains(&prod[i]) && !terminals.contains(&prod[i + 1]))
+                    {
+                        let symbols = first_sets[&prod[i + 1]].clone();
                         for symbol in symbols {
                             if !follow_sets[&prod[i]].contains(&symbol) {
                                 follow_sets
@@ -122,21 +165,6 @@ fn main() {
         if !changed {
             break;
         }
-    }
-
-    println!("Terminals: {:?}", terminals);
-    println!("Grammar Start Symbol: {}", start_symbol);
-    println!("Productions");
-    for (head, prods) in &productions {
-        print!("{}", head);
-        for prod in prods {
-            println!("\t{:?}", prod);
-        }
-        println!();
-    }
-    println!("First Sets");
-    for (key, value) in &first_sets {
-        println!("{} => {:?}", key, value);
     }
     println!("Follow Sets");
     for (key, value) in &follow_sets {
